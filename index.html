@@ -33,6 +33,14 @@
             <div class="loader">Actualizando lista en vivo... ✨</div>
         </div>
     </div>
+    
+    <div id="overlay" class="overlay" onclick="closeSheet()"></div>
+
+    <div id="bottom-sheet" class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div id="sheet-content">
+        </div>
+    </div>
 
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx47HzGEsN1f-DbMycItV6Nf0PtZ3T6iFEoO9rxrQPgZDeXq9nr_Gh_E4aMUNKDDTN31g/exec';
@@ -188,57 +196,67 @@
         // --- LÓGICA DE DESLIZAR PARA CERRAR (SWIPE DOWN) ---
         const bottomSheet = document.getElementById('bottom-sheet');
 
-        // Validación para asegurarnos que el HTML del panel existe antes de asignarle eventos
         if (bottomSheet) {
             let startY = 0;
             let currentY = 0;
             let isDragging = false;
 
             bottomSheet.addEventListener('touchstart', (e) => {
+                // Obtenemos la posición exacta del toque
                 startY = e.touches[0].clientY;
-                currentY = startY; // CORRECCIÓN: Inicializamos currentY para evitar que quede vacío si solo hay un toque
+                currentY = startY;
                 isDragging = true;
+
+                // Agregamos clase para quitar la transición (evita lag)
                 bottomSheet.classList.add('dragging');
-            });
+
+                // OPCIONAL: Si querés un efecto visual al tocar, podés agregarlo acá
+            }, { passive: true }); // passive: true mejora performance al inicio
 
             bottomSheet.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
+
                 currentY = e.touches[0].clientY;
                 let deltaY = currentY - startY;
 
-                // Solo permitimos deslizar hacia abajo (deltaY positivo)
+                // CLAVE: Solo permitimos deslizar hacia abajo (deltaY positivo)
                 if (deltaY > 0) {
+                    // !!! ESTA ES LA LÍNEA MÁGICA !!!
+                    // Evita que el navegador intente hacer scroll normal del texto
+                    if (e.cancelable) e.preventDefault();
+
+                    // Movemos la card siguiendo el dedo
                     bottomSheet.style.transform = `translateY(${deltaY}px)`;
                 }
-            });
+            }, { passive: false }); // passive: false es OBLIGATORIO para usar preventDefault()
 
             bottomSheet.addEventListener('touchend', (e) => {
                 if (!isDragging) return;
                 isDragging = false;
+
+                // Volvemos a habilitar las transiciones suaves
                 bottomSheet.classList.remove('dragging');
 
                 let deltaY = currentY - startY;
 
-                // Si deslizó más de 80px hacia abajo, cerramos el panel
-                if (deltaY > 80) {
+                // Si deslizó lo suficiente (más de 100px para evitar cierres accidentales), cerramos
+                if (deltaY > 100) {
                     closeSheet();
                 } else {
-                    // Si deslizó muy poquito, vuelve a la posición original
+                    // Si deslizó poquito, efecto rebote y vuelve a posición original
                     bottomSheet.style.transform = '';
                 }
+
+                // Reseteamos valores
+                startY = 0;
+                currentY = 0;
             });
         }
 
         fetchGuests();
+        // Mantenemos la actualización cada 10 segs
         setInterval(fetchGuests, 10000);
     </script>
-    <div id="overlay" class="overlay" onclick="closeSheet()"></div>
-
-    <div id="bottom-sheet" class="bottom-sheet">
-        <div class="sheet-handle"></div>
-        <div id="sheet-content">
-        </div>
-    </div>
 
 </body>
 

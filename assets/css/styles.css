@@ -258,3 +258,6 @@
         .bottom-sheet.dragging {
             transition: none;
         }
+        .bottom-sheet * {
+            touch-action: none; 
+        }
